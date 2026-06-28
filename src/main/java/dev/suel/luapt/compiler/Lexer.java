@@ -28,6 +28,8 @@ public class Lexer {
         PALAVRAS_CHAVE.put("falso", TokenType.FALSO);
         PALAVRAS_CHAVE.put("nulo", TokenType.NULO);
         PALAVRAS_CHAVE.put("escreva", TokenType.ESCREVA);
+        PALAVRAS_CHAVE.put("[", TokenType.COLCHETE_ESQ);
+        PALAVRAS_CHAVE.put("]", TokenType.COLCHETE_DIR);
     }
 
     private final String fonte;
@@ -62,6 +64,13 @@ public class Lexer {
             case ')':
                 adicionarToken(TokenType.PAREN_DIR);
                 break;
+            case '[':
+                adicionarToken(TokenType.COLCHETE_ESQ);
+                break;
+            case ']':
+                adicionarToken(TokenType.COLCHETE_DIR);
+                break;
+
             case ',':
                 adicionarToken(TokenType.VIRGULA);
                 break;
@@ -126,6 +135,7 @@ public class Lexer {
             case '\'':
                 lerString('\'');
                 break;
+
 
             default:
                 if (ehDigito(c)) {

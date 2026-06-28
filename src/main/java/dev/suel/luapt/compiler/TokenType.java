@@ -13,6 +13,7 @@ public enum TokenType {
     IDENTIFICADOR,
     SE,
     SENAO,
+    SENAOSE,
     ENTAO,
     FIM,
     ENQUANTO, FACA, PARA,
@@ -41,5 +42,7 @@ public enum TokenType {
     PAREN_ESQ, PAREN_DIR,
     VIRGULA, PONTO_VIRGULA,
 
+    COLCHETE_ESQ,
+    COLCHETE_DIR,
     EOF
 }

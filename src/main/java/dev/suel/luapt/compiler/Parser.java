@@ -250,6 +250,13 @@ private No declaracao() {
                 consumir(TokenType.PAREN_DIR, "Esperado ')' após argumentos");
                 return new ChamadaFuncao(nome, args);
             }
+
+            if (verificar(TokenType.COLCHETE_ESQ)){
+                avancar();
+                No indice = expressao();
+                consumir(TokenType.COLCHETE_DIR, "Esperando ']'");
+                return new Indice(new Variavel(nome), indice);
+            }
             return new Variavel(nome);
         }
 

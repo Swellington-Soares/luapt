@@ -82,7 +82,6 @@ public class Interpretador {
         }
     }
 
-    // ---- Avaliador de expressões ----
 
     private Object avaliar(No no) {
         if (no instanceof Numero n)    return n.getValor();
@@ -92,6 +91,28 @@ public class Interpretador {
 
         if (no instanceof Variavel n) {
             return ambiente.obter(n.getNome().getLexema());
+        }
+
+        if (no instanceof Indice n) {
+            var alvo = avaliar(n.getAlvo());
+            var indice = avaliar(n.getIndice());
+
+            if (!(indice instanceof Double i)) {
+                throw new RuntimeException("Índice deve ser um número");
+            }
+
+            var pos = i.intValue();
+
+            if (alvo instanceof String s) {
+                if (pos < 1 || pos > s.length()) {
+                    throw new RuntimeException(
+                            "Índice " + pos + " fora do intervalo (1.." + s.length() + ")"
+                    );
+                }
+                return String.valueOf(s.charAt(pos - 1));
+            }
+
+            throw new RuntimeException("Tipo não suporta indexação");
         }
 
         if (no instanceof UnOp n) {
