@@ -153,7 +153,6 @@ fim
 
 ## Referências
 
-Esta seção pode ser preenchida no futuro com:
 
 - Manual do Lua 5.5 [https://www.lua.org/manual/5.5/]
 - Livro: Entendendo Algoritmos. Aditya Y. Bhargava, 1ª Edição, Abril/2017
