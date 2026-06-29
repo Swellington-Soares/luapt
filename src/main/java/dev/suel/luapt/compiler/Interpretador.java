@@ -1,17 +1,20 @@
 package dev.suel.luapt.compiler;
 
-import dev.suel.luapt.compiler.ambiente.Ambiente;
-import dev.suel.luapt.compiler.ambiente.FuncaoLuaPT;
-import dev.suel.luapt.compiler.ambiente.Retorno;
+import dev.suel.luapt.compiler.ambiente.*;
 import dev.suel.luapt.compiler.ast.No;
 import dev.suel.luapt.compiler.ast.declaracoes.*;
 import dev.suel.luapt.compiler.ast.expressoes.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Interpretador {
 
     private Ambiente ambiente = new Ambiente();
+
+    public Interpretador() {
+        BibliotecaPadrao.Inject(ambiente);
+    }
 
     public void executar(List<No> nos) {
         for (No no : nos) {
@@ -30,7 +33,7 @@ public class Interpretador {
 
         } else if (no instanceof Escreva n) {
             Object valor = avaliar(n.valor);
-            System.out.println(formatar(valor));
+            System.out.print(formatar(valor));
 
         } else if (no instanceof Se n) {
             if (verdadeiro(avaliar(n.condicao))) {
@@ -157,31 +160,41 @@ public class Interpretador {
         if (no instanceof ChamadaFuncao n) {
             Object alvo = ambiente.obter(n.nome.lexema);
 
+            if (alvo instanceof FuncaoNativa fn) {
+                var args = new ArrayList<>();
+                for (No arg: n.getArgumentos()) {
+                    args.add(avaliar(arg));
+                }
+                return fn.chamar(args);
+            }
+
             if (!(alvo instanceof FuncaoLuaPT funcao)) {
                 throw new RuntimeException("'" + n.nome.lexema + "' não é uma função");
             }
 
-            if (n.getArgumentos().size() != funcao.parametros.size()) {
+            if (n.getArgumentos().size() != funcao.parametros().size()) {
                 throw new RuntimeException("Função '" + n.nome.lexema + "' esperava "
-                        + funcao.parametros.size() + " argumento(s), recebeu "
+                        + funcao.parametros().size() + " argumento(s), recebeu "
                         + n.getArgumentos().size());
             }
 
             // Cria escopo da função com os argumentos
-            Ambiente escopoFuncao = new Ambiente(funcao.fechamento);
-            for (int i = 0; i < funcao.parametros.size(); i++) {
-                String param = funcao.parametros.get(i).lexema;
+            Ambiente escopoFuncao = new Ambiente(funcao.fechamento());
+            for (int i = 0; i < funcao.parametros().size(); i++) {
+                String param = funcao.parametros().get(i).lexema;
                 Object valor = avaliar(n.getArgumentos().get(i));
                 escopoFuncao.definir(param, valor);
             }
 
             try {
-                executarBloco(funcao.corpo, escopoFuncao);
+                executarBloco(funcao.corpo(), escopoFuncao);
                 return null; // função sem retorne
             } catch (Retorno r) {
                 return r.valor;
             }
         }
+
+
 
         throw new RuntimeException("Nó desconhecido: " + no.getClass().getSimpleName());
     }
@@ -200,15 +213,23 @@ public class Interpretador {
     }
 
     private String formatar(Object valor) {
-        if (valor == null)              return "nulo";
-        if (valor instanceof Double d) {
-            // Mostra inteiro se não tiver parte decimal
-            if (d == Math.floor(d) && !Double.isInfinite(d)) {
-                return String.valueOf(d.longValue());
+        switch (valor) {
+            case null -> {
+                return "nulo";
             }
-            return String.valueOf(d);
+            case Double d -> {
+                // Mostra inteiro se não tiver parte decimal
+                if (d == Math.floor(d) && !Double.isInfinite(d)) {
+                    return String.valueOf(d.longValue());
+                }
+                return String.valueOf(d);
+            }
+            case Boolean b -> {
+                return b ? "verdadeiro" : "falso";
+            }
+            default -> {
+            }
         }
-        if (valor instanceof Boolean b) return b ? "verdadeiro" : "falso";
         return String.valueOf(valor);
     }
 }

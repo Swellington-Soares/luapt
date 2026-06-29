@@ -39,8 +39,10 @@ public enum TokenType {
     MODULO,
 
     // Delimitadores
-    PAREN_ESQ, PAREN_DIR,
-    VIRGULA, PONTO_VIRGULA,
+    PAREN_ESQ,
+    PAREN_DIR,
+    VIRGULA,
+    PONTO_VIRGULA,
 
     COLCHETE_ESQ,
     COLCHETE_DIR,

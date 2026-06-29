@@ -270,7 +270,6 @@ private No declaracao() {
                 + " — token: " + peek());
     }
 
-    
 
     private boolean verificar(TokenType tipo) {
         if (chegouAoFim()) return false;
