@@ -35,12 +35,15 @@ public enum TokenType {
     MAIOR_IGUAL,
     MENOR_IGUAL,
     IGUAL,
+    PONTO,
     PONTO_PONTO,  // = e ..
     MODULO,
 
     // Delimitadores
     PAREN_ESQ,
     PAREN_DIR,
+    CHAVE_ESQ,
+    CHAVE_DIR,
     VIRGULA,
     PONTO_VIRGULA,
 

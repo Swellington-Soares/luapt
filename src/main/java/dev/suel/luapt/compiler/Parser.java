@@ -148,9 +148,22 @@ private No declaracao() {
         if (verificar(TokenType.IGUAL)) {
             Token igual = avancar();
             No valor = atribuicao();
-            if (expr instanceof Variavel) {
-                return new Atribuicao(((Variavel) expr).getNome(), valor);
+
+            // variável simples
+            if (expr instanceof Variavel v) {
+                return new Atribuicao(v.getNome(), valor);
             }
+
+            // arr[i] = valor
+            if (expr instanceof Indice idx && idx.getAlvo() instanceof Variavel v) {
+                return new Tabela.AtribuicaoIndice(v.getNome(), idx.getIndice(), valor);
+            }
+
+            // pessoa.campo = valor
+            if (expr instanceof Tabela.AcessoCampo ac && ac.alvo instanceof Variavel v) {
+                return new Tabela.AtribuicaoCampo(v.getNome(), ac.campo, valor);
+            }
+
             throw new RuntimeException("Alvo de atribuição inválido na linha " + igual.linha);
         }
         return expr;
@@ -238,32 +251,64 @@ private No declaracao() {
 
         if (verificar(TokenType.IDENTIFICADOR)) {
             Token nome = avancar();
-            // Chamada de função?
+
+            // chamada de função
             if (verificar(TokenType.PAREN_ESQ)) {
                 avancar();
                 List<No> args = new ArrayList<>();
                 if (!verificar(TokenType.PAREN_DIR)) {
-                    do {
-                        args.add(expressao());
-                    } while (conferir(TokenType.VIRGULA));
+                    do { args.add(expressao()); } while (conferir(TokenType.VIRGULA));
                 }
-                consumir(TokenType.PAREN_DIR, "Esperado ')' após argumentos");
+                consumir(TokenType.PAREN_DIR, "Esperado ')'");
                 return new ChamadaFuncao(nome, args);
             }
 
-            if (verificar(TokenType.COLCHETE_ESQ)){
-                avancar();
-                No indice = expressao();
-                consumir(TokenType.COLCHETE_DIR, "Esperando ']'");
-                return new Indice(new Variavel(nome), indice);
+            No expr = new Variavel(nome);
+
+            // acesso encadeado: pessoa.nome ou pessoa["nome"] ou pessoa.notas[1]
+            while (verificar(TokenType.PONTO) || verificar(TokenType.COLCHETE_ESQ)) {
+                if (conferir(TokenType.PONTO)) {
+                    Token campo = consumir(TokenType.IDENTIFICADOR, "Esperado nome do campo após '.'");
+                    expr = new Tabela.AcessoCampo(expr, campo);
+                } else {
+                    avancar(); // consome [
+                    No indice = expressao();
+                    consumir(TokenType.COLCHETE_DIR, "Esperado ']'");
+                    expr = new Indice(expr, indice);
+                }
             }
-            return new Variavel(nome);
+
+            return expr;
         }
 
         if (conferir(TokenType.PAREN_ESQ)) {
             No expr = expressao();
             consumir(TokenType.PAREN_DIR, "Esperado ')' após expressão");
             return expr;
+        }
+
+        if (verificar(TokenType.CHAVE_ESQ)){
+            avancar();
+            var indices = new ArrayList<No>();
+            var valores = new ArrayList<No>();
+            var posicao = 1;
+            if (!verificar(TokenType.CHAVE_DIR)) {
+                do {
+                    // verifica se é chave = valor
+                    if (verificar(TokenType.IDENTIFICADOR) && verificarProximo(TokenType.IGUAL)) {
+                        Token chave = avancar(); // nome do campo
+                        avancar();              // consome =
+                        indices.add(new Texto(chave.lexema));
+                        valores.add(expressao());
+                    } else {
+                        // posicional — índice numérico automático
+                        indices.add(new Numero(posicao++));
+                        valores.add(expressao());
+                    }
+                } while (conferir(TokenType.VIRGULA));
+            }
+            consumir(TokenType.CHAVE_DIR, "Esperando '}' para fechar tabela");
+            return new Tabela(indices, valores);
         }
 
         throw new RuntimeException("Expressão inesperada na linha " + peek().linha
@@ -289,6 +334,11 @@ private No declaracao() {
     private Token consumir(TokenType tipo, String mensagem) {
         if (verificar(tipo)) return avancar();
         throw new RuntimeException(mensagem + " — linha " + peek().linha);
+    }
+
+    private boolean verificarProximo(TokenType tipo) {
+        if (atual + 1 >= tokens.size()) return false;
+        return tokens.get(atual + 1).tipo == tipo;
     }
 
     private Token peek() { return tokens.get(atual); }

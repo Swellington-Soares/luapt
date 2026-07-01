@@ -43,7 +43,6 @@ public class Lexer {
     }
 
 
-
     public List<Token> tokenizar() {
         while (!chegouAoFim()) {
             inicio = atual;
@@ -70,7 +69,12 @@ public class Lexer {
             case ']':
                 adicionarToken(TokenType.COLCHETE_DIR);
                 break;
-
+            case '{':
+                adicionarToken(TokenType.CHAVE_ESQ);
+                break;
+            case '}':
+                adicionarToken(TokenType.CHAVE_DIR);
+                break;
             case ',':
                 adicionarToken(TokenType.VIRGULA);
                 break;
@@ -116,6 +120,8 @@ public class Lexer {
             case '.':
                 if (conferir('.')) {
                     adicionarToken(TokenType.PONTO_PONTO);
+                } else {
+                    adicionarToken(TokenType.PONTO);
                 }
                 break;
 

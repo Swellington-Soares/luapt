@@ -4,8 +4,10 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
@@ -25,6 +27,7 @@ public class BibliotecaPadrao {
         ambiente.definir("maiuscula", (FuncaoNativa) this::maiuscula);
         ambiente.definir("minuscula", (FuncaoNativa) this::minuscula);
         ambiente.definir("capitalizar", (FuncaoNativa) this::capitalizar);
+        registarTabelas();
     }
 
     private Object capitalizar(List<Object> args) {
@@ -53,12 +56,10 @@ public class BibliotecaPadrao {
     }
 
     private Object tam(List<Object> args) {
-        if (args.size() != 1)
-            throw new IllegalArgumentException("tam() espera 1 argumento.");
-        if (!(args.getFirst() instanceof String s))
-            throw new IllegalArgumentException("tam() espera uma string como argumento.");
-
-        return (double) s.length();
+        if (args.size() != 1) throw new RuntimeException("tam() espera 1 argumento");
+        if (args.getFirst() instanceof String s)  return (double) s.length();
+        if (args.getFirst() instanceof Map<?,?> m) return (double) m.size();
+        throw new RuntimeException("tam() espera string, array ou tabela");
     }
 
     private Object escrevaLn(List<Object> args) {
@@ -81,6 +82,25 @@ public class BibliotecaPadrao {
             }
         }
         throw new RuntimeException("numero() espera string ou número");
+    }
+
+    private void registarTabelas() {
+        // chaves(tabela) → imprime as chaves
+        ambiente.definir("chaves", (FuncaoNativa) args -> {
+            if (!(args.getFirst() instanceof Map<?,?> m))
+                throw new RuntimeException("chaves() espera uma tabela");
+            LinkedHashMap<Object, Object> resultado = new LinkedHashMap<>();
+            int i = 1;
+            for (Object k : m.keySet()) resultado.put((double) i++, k);
+            return resultado;
+        });
+
+        // temChave(tabela, chave)
+        ambiente.definir("temChave", (FuncaoNativa) args -> {
+            if (!(args.get(0) instanceof Map<?,?> m))
+                throw new RuntimeException("temChave() espera uma tabela");
+            return m.containsKey(args.get(1));
+        });
     }
 
 }

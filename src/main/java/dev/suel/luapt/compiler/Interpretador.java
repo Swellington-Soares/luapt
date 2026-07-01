@@ -6,7 +6,9 @@ import dev.suel.luapt.compiler.ast.declaracoes.*;
 import dev.suel.luapt.compiler.ast.expressoes.*;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Interpretador {
 
@@ -67,7 +69,27 @@ public class Interpretador {
 
         } else if (no instanceof ChamadaFuncao n) {
             avaliar(n); // chamada como declaração (ignora retorno)
+        } else if (no instanceof Tabela.AtribuicaoIndice n) {
+            Object alvo = ambiente.obter(n.nome.lexema);
+            Object indice = avaliar(n.indice);
+            Object valor  = avaliar(n.valor);
 
+            if (alvo instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<Object, Object> tabela = (Map<Object, Object>) alvo;
+                tabela.put(indice, valor);
+            } else {
+                throw new RuntimeException("'" + n.nome.lexema + "' não suporta indexação");
+            }
+
+        } else if (no instanceof Tabela.AtribuicaoCampo n) {
+            Object alvo = ambiente.obter(n.nome.lexema);
+            if (!(alvo instanceof Map))
+                throw new RuntimeException("'" + n.nome.lexema + "' não é uma tabela");
+
+            @SuppressWarnings("unchecked")
+            Map<Object, Object> tabela = (Map<Object, Object>) alvo;
+            tabela.put(n.campo.lexema, avaliar(n.valor));
         } else {
             avaliar(no); // expressões soltas
         }
@@ -97,22 +119,21 @@ public class Interpretador {
         }
 
         if (no instanceof Indice n) {
-            var alvo = avaliar(n.getAlvo());
-            var indice = avaliar(n.getIndice());
-
-            if (!(indice instanceof Double i)) {
-                throw new RuntimeException("Índice deve ser um número");
-            }
-
-            var pos = i.intValue();
+            Object alvo  = avaliar(n.getAlvo());
+            Object indice = avaliar(n.getIndice());
 
             if (alvo instanceof String s) {
-                if (pos < 1 || pos > s.length()) {
-                    throw new RuntimeException(
-                            "Índice " + pos + " fora do intervalo (1.." + s.length() + ")"
-                    );
-                }
+                int pos = ((Double) indice).intValue();
+                if (pos < 1 || pos > s.length())
+                    throw new RuntimeException("Índice " + pos + " fora do intervalo");
                 return String.valueOf(s.charAt(pos - 1));
+            }
+
+            if (alvo instanceof Map<?,?> tabela) {
+                Object resultado = tabela.get(indice);
+                if (resultado == null && !tabela.containsKey(indice))
+                    throw new RuntimeException("Chave '" + indice + "' não existe na tabela");
+                return resultado;
             }
 
             throw new RuntimeException("Tipo não suporta indexação");
@@ -194,6 +215,23 @@ public class Interpretador {
             }
         }
 
+        if (no instanceof Tabela n) {
+            LinkedHashMap<Object, Object> tabela = new LinkedHashMap<>();
+            for (int i = 0; i < n.getIndices().size(); i++) {
+                Object chave = avaliar(n.getIndices().get(i));
+                Object valor = avaliar(n.getValores().get(i));
+                tabela.put(chave, valor);
+            }
+            return tabela;
+        }
+
+        if (no instanceof Tabela.AcessoCampo n) {
+            Object alvo = avaliar(n.alvo);
+            if (!(alvo instanceof Map<?,?> tabela))
+                throw new RuntimeException("Tipo não suporta acesso por campo");
+            return tabela.get(n.campo.lexema);
+        }
+
 
 
         throw new RuntimeException("Nó desconhecido: " + no.getClass().getSimpleName());
@@ -213,22 +251,25 @@ public class Interpretador {
     }
 
     private String formatar(Object valor) {
-        switch (valor) {
-            case null -> {
-                return "nulo";
-            }
-            case Double d -> {
-                // Mostra inteiro se não tiver parte decimal
-                if (d == Math.floor(d) && !Double.isInfinite(d)) {
-                    return String.valueOf(d.longValue());
-                }
-                return String.valueOf(d);
-            }
-            case Boolean b -> {
-                return b ? "verdadeiro" : "falso";
-            }
-            default -> {
-            }
+        if (valor == null)               return "nulo";
+        if (valor instanceof Boolean b)  return b ? "verdadeiro" : "falso";
+        if (valor instanceof Double d) {
+            if (d == Math.floor(d) && !Double.isInfinite(d))
+                return String.valueOf(d.longValue());
+            return String.valueOf(d);
+        }
+        if (valor instanceof Map<?,?> tabela) {
+            StringBuilder sb = new StringBuilder("{");
+            tabela.forEach((k, v) -> {
+                if (k instanceof Double d && d == Math.floor(d))
+                    sb.append(formatar(v));  // posicional — mostra só o valor
+                else
+                    sb.append(k).append(" = ").append(formatar(v));
+                sb.append(", ");
+            });
+            if (sb.length() > 1) sb.setLength(sb.length() - 2);
+            sb.append("}");
+            return sb.toString();
         }
         return String.valueOf(valor);
     }

@@ -1,12 +1,6 @@
-import dev.suel.luapt.programs.algoritmo.ValidarCPF;
-import dev.suel.luapt.programs.bibliotecapadrao.CapitalizarMinusculaMaiuscula;
-import dev.suel.luapt.programs.bibliotecapadrao.EscrevaLn;
-import dev.suel.luapt.programs.bibliotecapadrao.Tamanho;
-import dev.suel.luapt.programs.math.Complexo;
-import dev.suel.luapt.programs.misc.IndiceComFor;
-import dev.suel.luapt.programs.misc.IndiceNormal;
+import dev.suel.luapt.programs.bibliotecapadrao.TabelaTest;
 
-void main() throws UnsupportedEncodingException {
+void main() throws UnsupportedEncodingException, FileNotFoundException {
     System.setOut(new java.io.PrintStream(System.out, true, StandardCharsets.UTF_8));
 //    new Subtracao(10, 7).executar();
 //    new Soma(10, 7).executar();
@@ -20,7 +14,9 @@ void main() throws UnsupportedEncodingException {
    // new EscrevaLn("Swellington").executar();
   //  new ValidarCPF("1").executar();
   //  new Complexo().executar();
-    new CapitalizarMinusculaMaiuscula().executar();
+  //  new CapitalizarMinusculaMaiuscula().executar();
+    new TabelaTest().executar();
+
 }
 
 
